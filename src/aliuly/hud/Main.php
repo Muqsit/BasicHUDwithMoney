@@ -99,7 +99,7 @@ class Main extends PluginBase implements Listener,CommandExecutor {
 		} elseif (157.5 <= $deg && $deg < 202.5) {
 			return "East";
 		} elseif (202.5 <= $deg && $deg < 247.5) {
-			return "SouthEast";
+			return "Southeast";
 		} elseif (247.5 <= $deg && $deg < 292.5) {
 			return "South";
 		} elseif (292.5 <= $deg && $deg < 337.5) {
