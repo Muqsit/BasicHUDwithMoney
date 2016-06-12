@@ -91,21 +91,21 @@ class Main extends PluginBase implements Listener,CommandExecutor {
 	static public function bearing($deg) {
 		// Determine bearing
 		if (22.5 <= $deg && $deg < 67.5) {
-			return "Nordwest";
+			return "Northwest";
 		} elseif (67.5 <= $deg && $deg < 112.5) {
-			return "Norden";
+			return "North";
 		} elseif (112.5 <= $deg && $deg < 157.5) {
-			return "Nordost";
+			return "Northeast";
 		} elseif (157.5 <= $deg && $deg < 202.5) {
-			return "Osten";
+			return "East";
 		} elseif (202.5 <= $deg && $deg < 247.5) {
-			return "Südost";
+			return "SouthEast";
 		} elseif (247.5 <= $deg && $deg < 292.5) {
-			return "Süden";
+			return "South";
 		} elseif (292.5 <= $deg && $deg < 337.5) {
-			return "Südwest";
+			return "Southwest";
 		} else {
-			return "Westen";
+			return "West";
 		}
 		return (int)$deg;
 	}
