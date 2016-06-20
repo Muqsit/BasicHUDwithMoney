@@ -12,14 +12,7 @@ use pocketmine\scheduler\PluginTask;
 use pocketmine\Server;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerQuitEvent;
-use pocketmine\event\player\PlayerCommandPreprocessEvent;
-use pocketmine\event\player\PlayerItemHeldEvent;
-use pocketmine\event\server\RemoteServerCommandEvent;
-use pocketmine\event\server\ServerCommandEvent;
 use pocketmine\permission\Permission;
-use pocketmine\command\CommandExecutor;
-use pocketmine\command\CommandSender;
-use pocketmine\command\Command;
 use aliuly\hud\common\mc;
 use aliuly\hud\common\MPMU;
 
@@ -146,15 +139,9 @@ class Main extends PluginBase implements Listener,CommandExecutor {
 		$this->economy = $this->getServer()->getPluginManager()->getPlugin("EconomyAPI");
 		$vars = $this->consts;
 		foreach ([
-		        "{money}" => $this->economy->myMoney($player),
-				"{tps}" => $this->getServer()->getTicksPerSecond(),
-				"{player}" => $player->getName(),
-				"{world}" => $player->getLevel()->getName(),
-				"{x}" => (int)$player->getX(),
-				"{y}" => (int)$player->getY(),
-				"{z}" => (int)$player->getZ(),
-				"{yaw}" => (int)$player->getYaw(),
-				"{pitch}" => (int)$player->getPitch(),
+		                "{money}" => $this->economy->myMoney($player),
+		                "{ONLINE}" => count($this->getServer()->getOnlinePlayers());
+		                "{MAXONLINE}" => $this->getServer()->getMaxPlayers();
 				"{bearing}" => self::bearing($player->getYaw()),
 			] as $a => $b) {
 			$vars[$a] = $b;
@@ -209,36 +196,12 @@ class Main extends PluginBase implements Listener,CommandExecutor {
 
 		// These are constants that should be pre calculated
 		$this->consts = [
-			"{BasicHUD}" => $this->getDescription()->getFullName(),
-			"{MOTD}" => $this->getServer()->getMotd(),
 			"{10SPACE}" => str_repeat(" ",10),
 			"{20SPACE}" => str_repeat(" ",20),
 			"{30SPACE}" => str_repeat(" ",30),
 			"{40SPACE}" => str_repeat(" ",40),
 			"{50SPACE}" => str_repeat(" ",50),
 			"{NL}" => "\n",
-			"{BLACK}" => TextFormat::BLACK,
-			"{DARK_BLUE}" => TextFormat::DARK_BLUE,
-			"{DARK_GREEN}" => TextFormat::DARK_GREEN,
-			"{DARK_AQUA}" => TextFormat::DARK_AQUA,
-			"{DARK_RED}" => TextFormat::DARK_RED,
-			"{DARK_PURPLE}" => TextFormat::DARK_PURPLE,
-			"{GOLD}" => TextFormat::GOLD,
-			"{GRAY}" => TextFormat::GRAY,
-			"{DARK_GRAY}" => TextFormat::DARK_GRAY,
-			"{BLUE}" => TextFormat::BLUE,
-			"{GREEN}" => TextFormat::GREEN,
-			"{AQUA}" => TextFormat::AQUA,
-			"{RED}" => TextFormat::RED,
-			"{LIGHT_PURPLE}" => TextFormat::LIGHT_PURPLE,
-			"{YELLOW}" => TextFormat::YELLOW,
-			"{WHITE}" => TextFormat::WHITE,
-			"{OBFUSCATED}" => TextFormat::OBFUSCATED,
-			"{BOLD}" => TextFormat::BOLD,
-			"{STRIKETHROUGH}" => TextFormat::STRIKETHROUGH,
-			"{UNDERLINE}" => TextFormat::UNDERLINE,
-			"{ITALIC}" => TextFormat::ITALIC,
-			"{RESET}" => TextFormat::RESET,
 		];
 
 
@@ -291,18 +254,7 @@ class Main extends PluginBase implements Listener,CommandExecutor {
 
 	// We clear the permissions cache in the event of a command
 	// next time we schedule to fetch the HUD message it will be recomputed
-  private function onCmdEvent() {
-		$this->perms_cache = [];
-	}
-	public function onPlayerCmd(PlayerCommandPreprocessEvent $ev) {
-			$this->onCmdEvent();
-	}
-	public function onRconCmd(RemoteServerCommandEvent $ev) {
-		$this->onCmdEvent();
-	}
-	public function onConsoleCmd(ServerCommandEvent $ev) {
-		$this->onCmdEvent();
-	}
+
 	public function onQuit(PlayerQuitEvent $ev) {
 		$n = strtolower($ev->getPlayer()->getName());
 		if (isset($this->perms_cache[$n])) unset($this->perms_cache[$n]);
@@ -316,69 +268,6 @@ class Main extends PluginBase implements Listener,CommandExecutor {
 	}
 	public function onItemHeld(PlayerItemHeldEvent $ev){
 		$this->sendPopup($ev->getPlayer(),MPMU::itemName($ev->getItem()),2);
-	}
-
-	public function onCommand(CommandSender $sender, Command $cmd, $label, array $args) {
-		if ($cmd->getName() != "hud") return false;
-		if (!MPMU::inGame($sender)) return true;
-		$n = strtolower($sender->getName());
-		if (count($args) == 0) {
-			if (isset($this->disabled[$n])) {
-				$sender->sendMessage(mc::_("HUD is OFF"));
-				return true;
-			}
-			if (is_array($this->format[0])) {
-				foreach ($this->format as $rr) {
-					list($rank,,) = $rr;
-					if ($sender->hasPermission("basichud.rank.".$rank)) break;
-				}
-				$sender->sendMessage(mc::_("HUD using format %1%",$rank));
-				$fl = [];
-				foreach ($this->format as $rr) {
-					list($rank,,) = $rr;
-					$fl[] = $rank;
-				}
-				if ($sender->hasPermission("basichud.cmd.switch")) {
-					$sender->sendMessage(mc::_("Available formats: %1%",
-												implode(", ",$fl)));
-				}
-				return true;
-			}
-			$sender->sendMessage(mc::_("HUD is ON"));
-			return true;
-		}
-		if (count($args) != 1) return false;
-		$mode = strtolower(array_shift($args));
-		if (is_array($this->format[0])) {
-			// Check if the input matches any of the ranks...
-			foreach ($this->format as $rr1) {
-				list($rank,,) = $rr1;
-				if (strtolower($rank) == $mode) {
-					// OK, user wants to switch to this format...
-					if (!MPMU::access($sender,"basichud.cmd.switch")) return true;
-					foreach ($this->format as $rr2) {
-						list($rn,,) = $rr2;
-						if ($rank == $rn) {
-							$this->changePermission($sender,"basichud.rank.".$rn,true);
-						} else {
-							$this->changePermission($sender,"basichud.rank.".$rn,false);
-						}
-					}
-					$sender->sendMessage(mc::_("Switching to format %1%",$rank));
-					return true;
-				}
-			}
-		}
-		if (!MPMU::access($sender,"basichud.cmd.toggle")) return true;
-		$mode = filter_var($mode,FILTER_VALIDATE_BOOLEAN);
-		if ($mode) {
-			if (isset($this->disabled[$n])) unset($this->disabled[$n]);
-			$sender->sendMessage(mc::_("Turning on HUD"));
-			return true;
-		}
-		$this->disabled[$n] = $n;
-		$sender->sendMessage(mc::_("Turning off HUD"));
-		return true;
 	}
 
 	/**
